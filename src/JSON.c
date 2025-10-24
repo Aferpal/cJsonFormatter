@@ -31,8 +31,6 @@ JSON* loadJsonFromFile(char* filename){
     return res;
 }
 
-
-
 JSONItem createItemFromString(char* name, char* value, enum JSONType type){
     JSONItem item;
     item.name = strdup(name);
@@ -151,4 +149,20 @@ JSON* formatJsonFromString(char* json_as_string){
     }
 
     return json_object;
+}
+
+int getAsInt(JSON* json, char* name){
+    return getJSONItemByNameAsInt(&(json->items), name);
+}
+
+double getAsDouble(JSON* json, char* name){
+    return getJSONItemByNameAsDouble(&(json->items), name);
+}
+
+char* getAsString(JSON* json, char* name){
+    return getJSONItemByNameAsString(&(json->items), name);
+}
+
+JSON* getAsObject(JSON* json, char* name){
+    return getJSONItemByNameAsObject(&(json->items), name);
 }
