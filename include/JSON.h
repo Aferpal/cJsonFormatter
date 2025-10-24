@@ -19,6 +19,10 @@ char* getAsString(JSON* json, char* name);
 
 JSON* getAsObject(JSON* json, char* name);
 
+void printJson(JSON*);
+
+void exportJson(JSON*, char*);
+
 void freeJson(JSON*);
 
 #endif

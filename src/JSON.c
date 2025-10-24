@@ -167,6 +167,85 @@ JSON* getAsObject(JSON* json, char* name){
     return getJSONItemByNameAsObject(&(json->items), name);
 }
 
+void exportJsonWithDepth(JSON*, int, FILE*);
+
+void exportJsonItem(JSONItem* item, int depth, FILE* file){
+    fprintf(file, "\"%s\": ", item->name);
+    switch (item->type)
+    {
+    case STRING:
+        fprintf(file, "\"%s\"", item->value.stringvalue);
+        break;
+    case INT:
+        fprintf(file, "%d", item->value.intvalue);
+        break;
+    case DOUBLE:
+        fprintf(file, "%f", item->value.doublevalue);
+        break;
+    case OBJECT:
+        exportJsonWithDepth(item->value.objectvalue, depth+1, file);
+        break;
+    default:
+        break;
+    }
+}
+
+void exportJsonItemList(JSONItemList* list, int depth, FILE* file){
+    if(list == NULL){
+        return;
+    }
+
+    exportJsonItemList(list->left, depth, file);
+
+    exportJsonItemList(list->right, depth, file);
+
+    for(int i = 0; i <= depth; i++){
+        fprintf(file, "\t");
+    }
+    exportJsonItem(&(list->item), depth, file);
+    fprintf(file, ",\n");
+}
+
+
+void exportJsonItemListFirst(JSONItemList* list, int depth, FILE* file){
+    if(list == NULL){
+        return;
+    }
+
+    exportJsonItemList(list->left, depth, file);
+
+    exportJsonItemList(list->right, depth, file);
+
+    for(int i = 0; i <= depth; i++){
+        fprintf(file, "\t");
+    }
+    exportJsonItem(&(list->item), depth, file);
+    fprintf(file, "\n");
+}
+
+void exportJsonWithDepth(JSON* json, int depth, FILE* file){
+    fprintf(file, "{\n");
+
+    exportJsonItemListFirst(json->items, depth, file);
+
+    for( int i = 0; i< depth; i++){
+        fprintf(file, "\t");
+    }
+    fprintf(file, "}");
+}
+
+void exportJson(JSON* json, char* filename){
+    FILE* file = fopen(filename, "w");
+
+    if( file != NULL ){
+        exportJsonWithDepth(json, 0, file);
+    }
+}
+
+void printJson(JSON* json){
+    exportJsonWithDepth(json, 0, stdout);
+    fprintf(stdout, "\n");
+}
 
 void freeJsonItemList(JSONItemList* list){
 
