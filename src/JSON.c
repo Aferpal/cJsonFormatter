@@ -166,3 +166,41 @@ char* getAsString(JSON* json, char* name){
 JSON* getAsObject(JSON* json, char* name){
     return getJSONItemByNameAsObject(&(json->items), name);
 }
+
+
+void freeJsonItemList(JSONItemList* list){
+
+    if(list == NULL){
+        return;
+    }
+
+    freeJsonItemList(list->left);
+
+    if(list->left != NULL){
+        free(list->left);
+        list->left = NULL;
+    }
+
+    freeJsonItemList(list->right);
+
+    if(list->right != NULL){
+        free(list->right);
+        list->right = NULL;
+    }
+
+    free(list->item.name);
+
+    if(list->item.type == STRING){
+        free(list->item.value.stringvalue);
+    }else if(list->item.type == OBJECT){
+        freeJson(list->item.value.objectvalue);
+    }
+}
+
+void freeJson(JSON* json){
+    freeJsonItemList(json->items);
+    free(json->items);
+    json->items = NULL;
+}
+
+

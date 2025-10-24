@@ -19,4 +19,6 @@ char* getAsString(JSON* json, char* name);
 
 JSON* getAsObject(JSON* json, char* name);
 
+void freeJson(JSON*);
+
 #endif
