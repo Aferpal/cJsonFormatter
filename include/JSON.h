@@ -4,7 +4,11 @@
 
 
 typedef struct JSON{
-    JSONItemList items;
+    JSONItemList* items;
 }JSON;
+
+JSON* loadJsonFromFile(char* filename);
+
+JSON* formatJsonFromString(char* json_as_string);
 
 #endif
