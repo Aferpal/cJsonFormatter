@@ -1,16 +1,16 @@
 #ifndef __JSONItemList__H__
-#define __JsONItemList__H__
+#define __JSONItemList__H__
 
-typedef struct JSON;
+typedef struct JSON JSON;
 
-enum JSONType{INT, DOUBLE, STRING, OBJECT};
+enum JSONType{INT, DOUBLE, STRING, OBJECT, NONE};
 
 
 typedef union JSONValue{
     int intvalue;
     double doublevalue;
     char* stringvalue;
-    struct JSON* objectvalue;
+    JSON* objectvalue;
 }JSONValue;
 
 typedef struct JSONItem{
@@ -34,7 +34,7 @@ JSONItemList* addJSONIntItem(JSONItemList** list, char* name, int value);
 
 JSONItemList* addJSONDoubleItem(JSONItemList** list, char* name, double value);
 
-JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, struct JSON* value);
+JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, JSON* value);
 
 
 
@@ -48,7 +48,7 @@ double getJSONItemByNameAsDouble(JSONItemList** list, char* name);
 
 char* getJSONItemByNameAsString(JSONItemList** list, char* name);
 
-struct JSON* getJSONItemByNameAsObject(JSONItemList** list, char* name);
+JSON* getJSONItemByNameAsObject(JSONItemList** list, char* name);
 
 
 
