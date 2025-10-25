@@ -67,6 +67,7 @@ JSON* formatJsonFromString(char* json_as_string){
     enum JSONType type = NONE;
     char valueEndCharacter;
 
+    int counter_for_nested_objects = 0;
 
     //find the start of first param
     while(*json_as_string != '"'){
@@ -115,14 +116,24 @@ JSON* formatJsonFromString(char* json_as_string){
         }else if(*json_as_string == '{'){ //if it is a json object
 
             type = OBJECT;
-            valueEndCharacter='}';
+            counter_for_nested_objects++;
+            json_as_string++;
+            valueEndCharacter='\0';
 
         }
 
         //very complex while condition, if its a number type then it must be either a dot or a number char, else it mustnt be the designed final character
-        while(*json_as_string != valueEndCharacter && !((type == INT || type == DOUBLE) && ((*json_as_string < '0' || *json_as_string > '9'))) || (type == INT && *json_as_string == '.')){
+        while(*json_as_string != valueEndCharacter && !((type == INT || type == DOUBLE) && ((*json_as_string < '0' || *json_as_string > '9'))) && !(type == OBJECT && counter_for_nested_objects == 0) || (type == INT && *json_as_string == '.')){
             if(type == INT && *json_as_string == '.'){
                 type = DOUBLE;
+            }
+
+            if(type == OBJECT && *json_as_string == '{'){
+                counter_for_nested_objects++;
+            }
+
+            if(type == OBJECT && *json_as_string == '}'){
+                counter_for_nested_objects--;
             }
             json_as_string++;
         }
@@ -305,5 +316,4 @@ void freeJson(JSON* json){
     free(json->items);
     json->items = NULL;
 }
-
 
