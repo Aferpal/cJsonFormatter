@@ -2,7 +2,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<stdlib.h>
 
 JSON* loadJsonFromFile(char* filename){
 
@@ -151,6 +150,26 @@ JSON* formatJsonFromString(char* json_as_string){
     return json_object;
 }
 
+//setters
+
+void setAsInt(JSON* json, char* name, int value){
+    addJSONIntItem(&(json->items), name, value);
+}
+
+void setAsDouble(JSON* json, char* name, double value){
+    addJSONDoubleItem(&(json->items), name, value);
+}
+
+void setAsString(JSON* json, char* name, char* value){
+    addJSONStringItem(&(json->items), name, value);
+}
+
+void setAsObject(JSON* json, char* name, JSON* value){
+    addJSONObjectItem(&(json->items), name, value);
+}
+
+//getters
+
 int getAsInt(JSON* json, char* name){
     return getJSONItemByNameAsInt(&(json->items), name);
 }
@@ -166,6 +185,9 @@ char* getAsString(JSON* json, char* name){
 JSON* getAsObject(JSON* json, char* name){
     return getJSONItemByNameAsObject(&(json->items), name);
 }
+
+
+//other functions
 
 void exportJsonWithDepth(JSON*, int, FILE*);
 
@@ -206,7 +228,6 @@ void exportJsonItemList(JSONItemList* list, int depth, FILE* file){
     fprintf(file, ",\n");
 }
 
-
 void exportJsonItemListFirst(JSONItemList* list, int depth, FILE* file){
     if(list == NULL){
         return;
@@ -246,6 +267,9 @@ void printJson(JSON* json){
     exportJsonWithDepth(json, 0, stdout);
     fprintf(stdout, "\n");
 }
+
+
+//Destructor
 
 void freeJsonItemList(JSONItemList* list){
 
