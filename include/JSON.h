@@ -7,41 +7,47 @@ typedef struct JSON{
     JSONItemList* items;
 }JSON;
 
-JSON* loadJsonFromFile(char* filename);
+typedef JSON* json_t;
 
-JSON* formatJsonFromString(char* json_as_string);
+json_t createJsonEmpty();
+
+json_t createJsonFromString(char*);
+
+json_t loadJsonFromFile(char* filename);
+
+json_t formatJsonFromString(char* json_as_string);
 
 //setters
 
-void setAsInt(JSON* json, char* name, int value);
+void setAsInt(json_t json, char* name, int value);
 
-void setAsDouble(JSON* json, char* name, double value);
+void setAsDouble(json_t json, char* name, double value);
 
-void setAsString(JSON* json, char* name, char* value);
+void setAsString(json_t json, char* name, char* value);
 
-void setAsObject(JSON* json, char* name, JSON* value);
+void setAsObject(json_t json, char* name, json_t value);
 
 //getters
 
-int getAsInt(JSON* json, char* name);
+int getAsInt(json_t json, char* name);
 
-double getAsDouble(JSON* json, char* name);
+double getAsDouble(json_t json, char* name);
 
-char* getAsString(JSON* json, char* name);
+char* getAsString(json_t json, char* name);
 
-JSON* getAsObject(JSON* json, char* name);
+json_t getAsObject(json_t json, char* name);
 
 
 
 //other public functions
 
-void printJson(JSON*);
+void printJson(json_t);
 
-void exportJson(JSON*, char*);
+void exportJson(json_t, char*);
 
 
 //destructor
 
-void freeJson(JSON*);
+void freeJson(json_t);
 
 #endif

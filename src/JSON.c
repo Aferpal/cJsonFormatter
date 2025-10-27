@@ -3,7 +3,20 @@
 #include<stdlib.h>
 #include<string.h>
 
-JSON* loadJsonFromFile(char* filename){
+
+json_t createJsonEmpty(){
+    json_t json = (JSON*)malloc(sizeof(JSON));
+    json->items = NULL;
+    return json;
+}
+
+json_t createJsonFromString(char* json_string){
+    return formatJsonFromString(json_string);
+}
+
+json_t formatJsonFromString(char* json_as_string);
+
+json_t loadJsonFromFile(char* filename){
 
     FILE* json_file = fopen(filename, "r");
 
@@ -23,7 +36,7 @@ JSON* loadJsonFromFile(char* filename){
 
     fclose(json_file);
 
-    JSON* res = formatJsonFromString(json_file_buffer);
+    json_t res = formatJsonFromString(json_file_buffer);
 
     free(json_file_buffer);
     
@@ -54,7 +67,7 @@ JSONItem createItemFromString(char* name, char* value, enum JSONType type){
     return item;
 }
 
-JSON* formatJsonFromString(char* json_as_string){
+json_t formatJsonFromString(char* json_as_string){
 
     if(json_as_string == NULL){
         return NULL;
@@ -123,7 +136,7 @@ JSON* formatJsonFromString(char* json_as_string){
         }
 
         //very complex while condition, if its a number type then it must be either a dot or a number char, else it mustnt be the designed final character
-        while(*json_as_string != valueEndCharacter && !((type == INT || type == DOUBLE) && ((*json_as_string < '0' || *json_as_string > '9'))) && !(type == OBJECT && counter_for_nested_objects == 0) || (type == INT && *json_as_string == '.')){
+        while((*json_as_string != valueEndCharacter && !((type == INT || type == DOUBLE) && ((*json_as_string < '0' || *json_as_string > '9'))) && !(type == OBJECT && counter_for_nested_objects == 0) ) || (type == INT && *json_as_string == '.')){
             if(type == INT && *json_as_string == '.'){
                 type = DOUBLE;
             }
@@ -163,44 +176,44 @@ JSON* formatJsonFromString(char* json_as_string){
 
 //setters
 
-void setAsInt(JSON* json, char* name, int value){
+void setAsInt(json_t json, char* name, int value){
     addJSONIntItem(&(json->items), name, value);
 }
 
-void setAsDouble(JSON* json, char* name, double value){
+void setAsDouble(json_t json, char* name, double value){
     addJSONDoubleItem(&(json->items), name, value);
 }
 
-void setAsString(JSON* json, char* name, char* value){
+void setAsString(json_t json, char* name, char* value){
     addJSONStringItem(&(json->items), name, value);
 }
 
-void setAsObject(JSON* json, char* name, JSON* value){
+void setAsObject(json_t json, char* name, json_t value){
     addJSONObjectItem(&(json->items), name, value);
 }
 
 //getters
 
-int getAsInt(JSON* json, char* name){
+int getAsInt(json_t json, char* name){
     return getJSONItemByNameAsInt(&(json->items), name);
 }
 
-double getAsDouble(JSON* json, char* name){
+double getAsDouble(json_t json, char* name){
     return getJSONItemByNameAsDouble(&(json->items), name);
 }
 
-char* getAsString(JSON* json, char* name){
+char* getAsString(json_t json, char* name){
     return getJSONItemByNameAsString(&(json->items), name);
 }
 
-JSON* getAsObject(JSON* json, char* name){
+json_t getAsObject(json_t json, char* name){
     return getJSONItemByNameAsObject(&(json->items), name);
 }
 
 
 //other functions
 
-void exportJsonWithDepth(JSON*, int, FILE*);
+void exportJsonWithDepth(json_t, int, FILE*);
 
 void exportJsonItem(JSONItem* item, int depth, FILE* file){
     fprintf(file, "\"%s\": ", item->name);
@@ -255,7 +268,7 @@ void exportJsonItemListFirst(JSONItemList* list, int depth, FILE* file){
     fprintf(file, "\n");
 }
 
-void exportJsonWithDepth(JSON* json, int depth, FILE* file){
+void exportJsonWithDepth(json_t json, int depth, FILE* file){
     fprintf(file, "{\n");
 
     exportJsonItemListFirst(json->items, depth, file);
@@ -266,7 +279,7 @@ void exportJsonWithDepth(JSON* json, int depth, FILE* file){
     fprintf(file, "}");
 }
 
-void exportJson(JSON* json, char* filename){
+void exportJson(json_t json, char* filename){
     FILE* file = fopen(filename, "w");
 
     if( file != NULL ){
@@ -274,7 +287,7 @@ void exportJson(JSON* json, char* filename){
     }
 }
 
-void printJson(JSON* json){
+void printJson(json_t json){
     exportJsonWithDepth(json, 0, stdout);
     fprintf(stdout, "\n");
 }
@@ -311,7 +324,7 @@ void freeJsonItemList(JSONItemList* list){
     }
 }
 
-void freeJson(JSON* json){
+void freeJson(json_t json){
     freeJsonItemList(json->items);
     free(json->items);
     json->items = NULL;
