@@ -6,7 +6,7 @@
 // CREATION AND FORMATTING
 
 json_t formatJsonFromString(const char*); // pre declaration
-JSONItem createItemFromString(char* name, char* value, enum JSONType type);
+JSONItem createItemFromString(const char* name, char* value, enum JSONType type);
 
 
 json_t createJsonEmpty(){
@@ -159,7 +159,7 @@ const char* read_number(const char* buffer, char** string){
 
 }
 
-const char* read_value(const char* buffer, char* name, JSONItem* item){
+const char* read_value(const char* buffer, const char* name, JSONItem* item){
 
     if( buffer == NULL ){
         return NULL;
@@ -328,7 +328,7 @@ json_list_t formatJsonListFromString(const char* value){
 
 }
 
-JSONItem createItemFromString(char* name, char* value, enum JSONType type){
+JSONItem createItemFromString(const char* name, char* value, enum JSONType type){
     JSONItem item;
     item.name = strdup(name);
     item.type = type;
@@ -550,7 +550,7 @@ void exportJsonWithDepth(json_t json, int depth, FILE* file){
     fprintf(file, "}");
 }
 
-void exportJson(json_t json, char* filename){
+void exportJson(json_t json, const char* filename){
     FILE* file = fopen(filename, "w");
 
     if( file != NULL ){

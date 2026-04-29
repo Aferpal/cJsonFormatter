@@ -34,7 +34,7 @@ void resize(JSONList* list){
     
     int new_length = list->_reserved * 2;
 
-    list->_data = realloc(list->_data, new_length);
+    list->_data = (JSONValue*)realloc(list->_data, new_length);
 
     if( list->_data == NULL ){
         list->_size = 0;

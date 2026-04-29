@@ -19,9 +19,7 @@ json_t loadJsonFromFile(char* filename);
 
 //setters
 
-void setAsInt(json_t json, char* name, int value);
-
-void setAsDouble(json_t json, char* name, double value);
+void setAsNumber(json_t json, char* name, double value);
 
 void setAsString(json_t json, char* name, char* value);
 
@@ -31,9 +29,7 @@ void setAsList(json_t json, char* name, json_list_t value);
 
 //getters
 
-int getAsInt(json_t json, char* name);
-
-double getAsDouble(json_t json, char* name);
+double getAsNumber(json_t json, char* name);
 
 char* getAsString(json_t json, char* name);
 
@@ -47,7 +43,7 @@ json_list_t getAsList(json_t json, char* name);
 
 void printJson(json_t);
 
-void exportJson(json_t, char*);
+void exportJson(json_t, const char*);
 
 char* jsonToString(json_t);
 
