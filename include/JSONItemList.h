@@ -1,17 +1,7 @@
 #ifndef __JSONItemList__H__
 #define __JSONItemList__H__
 
-typedef struct JSON JSON;
-
-enum JSONType{INT, DOUBLE, STRING, OBJECT, NONE};
-
-
-typedef union JSONValue{
-    int intvalue;
-    double doublevalue;
-    char* stringvalue;
-    JSON* objectvalue;
-}JSONValue;
+#include "JSONTypes.h"
 
 typedef struct JSONItem{
     char* name;
@@ -30,11 +20,11 @@ JSONItemList* addJSONItem(JSONItemList** list, JSONItem item);
 
 JSONItemList* addJSONStringItem(JSONItemList** list, char* name, char* value);
 
-JSONItemList* addJSONIntItem(JSONItemList** list, char* name, int value);
-
-JSONItemList* addJSONDoubleItem(JSONItemList** list, char* name, double value);
+JSONItemList* addJSONNumberItem(JSONItemList** list, char* name, double value);
 
 JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, JSON* value);
+
+JSONItemList* addJSONListItem(JSONItemList** list, char* name, JSONList* value);
 
 
 
@@ -42,14 +32,13 @@ JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, JSON* value);
 
 JSONItem* getJSONItemByName(JSONItemList** list, char* name);
 
-int getJSONItemByNameAsInt(JSONItemList** list, char* name);
-
-double getJSONItemByNameAsDouble(JSONItemList** list, char* name);
+double getJSONItemByNameAsNumber(JSONItemList** list, char* name);
 
 char* getJSONItemByNameAsString(JSONItemList** list, char* name);
 
 JSON* getJSONItemByNameAsObject(JSONItemList** list, char* name);
 
+JSONList* getJSONItemByNameAsList(JSONItemList** list, char* name);
 
 
 

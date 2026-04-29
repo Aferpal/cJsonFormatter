@@ -69,20 +69,11 @@ JSONItemList* addJSONStringItem(JSONItemList** list, char* name, char* value){
     return addJSONItem(list, item);
 }
 
-JSONItemList* addJSONIntItem(JSONItemList** list, char* name, int value){
+JSONItemList* addJSONNumberItem(JSONItemList** list, char* name, double value){
     JSONItem item;
     item.name = name;
-    item.value.intvalue = value;
-    item.type = INT;
-
-    return addJSONItem(list, item);
-}
-
-JSONItemList* addJSONDoubleItem(JSONItemList** list, char* name, double value){
-    JSONItem item;
-    item.name = name;
-    item.value.doublevalue = value;
-    item.type = DOUBLE;
+    item.value.numbervalue = value;
+    item.type = NUMBER;
 
     return addJSONItem(list, item);
 }
@@ -92,6 +83,15 @@ JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, struct JSON* va
     item.name = name;
     item.value.objectvalue = value;
     item.type = OBJECT;
+
+    return addJSONItem(list, item);
+}
+
+JSONItemList* addJSONListItem(JSONItemList** list, char* name, JSONList* value){
+    JSONItem item;
+    item.name = name;
+    item.value.listvalue = value;
+    item.type = LIST;
 
     return addJSONItem(list, item);
 }
@@ -115,24 +115,14 @@ JSONItem* getJSONItemByName(JSONItemList** list, char* name){
 
 }
 
-int getJSONItemByNameAsInt(JSONItemList** list, char* name){
+double getJSONItemByNameAsNumber(JSONItemList** list, char* name){
     JSONItem* item = getJSONItemByName(list, name);
 
-    if(item == NULL || item->type != INT){
+    if(item == NULL || item->type != NUMBER){
         return -1;
     }
 
-    return (item)->value.intvalue;
-}
-
-double getJSONItemByNameAsDouble(JSONItemList** list, char* name){
-    JSONItem* item = getJSONItemByName(list, name);
-
-    if(item == NULL || item->type != DOUBLE){
-        return -1;
-    }
-
-    return (item)->value.doublevalue;
+    return (item)->value.numbervalue;
 }
 
 char* getJSONItemByNameAsString(JSONItemList** list, char* name){
@@ -153,4 +143,14 @@ struct JSON* getJSONItemByNameAsObject(JSONItemList** list, char* name){
     }
 
     return (item)->value.objectvalue;
+}
+
+JSONList* getJSONItemByNameAsList(JSONItemList** list, char* name){
+    JSONItem* item = getJSONItemByName(list, name);
+
+    if(item == NULL || item->type != LIST){
+        return 0;
+    }
+
+    return (item)->value.listvalue;
 }
