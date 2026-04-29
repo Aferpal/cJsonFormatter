@@ -238,7 +238,7 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
 
 }
 
-const char* nextKeyValuePair(const char* string, JSONItem* value, int* hasNext){
+const char* nextKeyValuePair(const char* string, JSONItem* value){
     
     if( string == NULL ){
         return NULL;
@@ -269,11 +269,6 @@ const char* nextKeyValuePair(const char* string, JSONItem* value, int* hasNext){
     if( string == NULL ){
         printf("Error intentando leer el value con nombre %s\n", name);
         return NULL;
-    }
-
-    if(*string == ','){
-        *hasNext = 1;
-        string++;
     }
 
     return string;
@@ -377,7 +372,7 @@ json_t formatJsonFromString(const char* json_as_string){
 
         hasNext = 0;
 
-        json_as_string = nextKeyValuePair(json_as_string, &item, &hasNext);
+        json_as_string = nextKeyValuePair(json_as_string, &item);
 
         if( json_as_string == NULL ){ // si ha habido cualquier problema liberamos
 
@@ -387,6 +382,11 @@ json_t formatJsonFromString(const char* json_as_string){
 
             return NULL;
 
+        }
+
+        if(*json_as_string == ','){
+            hasNext = 1;
+            json_as_string++;
         }
 
         addJSONItem(&(json_object->items), item); 
@@ -495,7 +495,7 @@ void exportJsonItem(JSONItem* item, int depth, FILE* file){
         fprintf(file, "\"%s\"", item->value.stringvalue);
         break;
     case NUMBER:
-        fprintf(file, "%f", item->value.numbervalue);
+        fprintf(file, "%g", item->value.numbervalue);
         break;
     case OBJECT:
         exportJsonWithDepth(item->value.objectvalue, depth+1, file);
