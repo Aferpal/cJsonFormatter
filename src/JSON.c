@@ -6,7 +6,7 @@
 // CREATION AND FORMATTING
 
 json_t formatJsonFromString(const char*); // pre declaration
-JSONItem createItemFromString(const char* name, char* value, enum JSONType type);
+int createValueFromString(char* value, enum JSONType type, JSONValue*);
 
 
 json_t createJsonEmpty(){
@@ -159,7 +159,7 @@ const char* read_number(const char* buffer, char** string){
 
 }
 
-const char* read_value(const char* buffer, const char* name, JSONItem* item){
+const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* out_type){
 
     if( buffer == NULL ){
         return NULL;
@@ -168,8 +168,6 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
     buffer = skip_whitespaces(buffer);
 
     char* value;
-
-    enum JSONType type;
 
     switch (*buffer)
     {
@@ -183,7 +181,7 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
             return NULL;
         }
 
-        type = LIST;
+        *out_type = LIST;
 
         break;
 
@@ -196,7 +194,7 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
             return NULL;
         }
 
-        type = OBJECT;
+        *out_type = OBJECT;
 
         break;
 
@@ -208,7 +206,7 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
             return NULL;
         }
 
-        type = STRING;
+        *out_type = STRING;
 
         break;
 
@@ -225,20 +223,20 @@ const char* read_value(const char* buffer, const char* name, JSONItem* item){
             return NULL;
         }
 
-        type = NUMBER;
+        *out_type = NUMBER;
 
         break;
     }
 
     buffer = skip_whitespaces(buffer);
 
-    *item = createItemFromString(name, value, type);
+    createValueFromString(value, *out_type, out_value);
 
     return buffer;
 
 }
 
-const char* nextKeyValuePair(const char* string, JSONItem* value){
+const char* nextKeyValuePair(const char* string, JSONItem* item){
     
     if( string == NULL ){
         return NULL;
@@ -255,6 +253,8 @@ const char* nextKeyValuePair(const char* string, JSONItem* value){
         return NULL;
     }
 
+    item->name = name;
+
     string = skip_whitespaces(string);
 
     if( *string != ':'){
@@ -264,7 +264,7 @@ const char* nextKeyValuePair(const char* string, JSONItem* value){
 
     string++;
 
-    string = read_value(string, name, value);
+    string = read_value(string, &(item->value), &(item->type));
     
     if( string == NULL ){
         printf("Error intentando leer el value con nombre %s\n", name);
@@ -287,7 +287,9 @@ json_list_t formatJsonListFromString(const char* value){
 
     json_list_t list = createJsonList();
 
-    JSONItem item;
+    JSONValue j_value;
+
+    enum JSONType t;
 
     int hasNext = 1;
 
@@ -295,7 +297,7 @@ json_list_t formatJsonListFromString(const char* value){
 
         hasNext = 0;
 
-        value = read_value(value, "", &item);
+        value = read_value(value, &j_value, &t);
 
         if( value == NULL ){
             return NULL;
@@ -306,7 +308,7 @@ json_list_t formatJsonListFromString(const char* value){
             value++;
         }
 
-        append(list, item.value);
+        append(list, j_value);
 
         if( hasNext != 0 ){
             value = skip_whitespaces(value);
@@ -323,28 +325,25 @@ json_list_t formatJsonListFromString(const char* value){
 
 }
 
-JSONItem createItemFromString(const char* name, char* value, enum JSONType type){
-    JSONItem item;
-    item.name = strdup(name);
-    item.type = type;
+int createValueFromString(char* str_value, enum JSONType type, JSONValue* out_value){
     
     switch(type){
         case STRING:
-            item.value.stringvalue = strdup(value);
+            out_value->stringvalue = strdup(str_value);
             break;
         case NUMBER:
-            item.value.numbervalue = atof(value);
+            out_value->numbervalue = atof(str_value);
         break;
         case OBJECT:
-            item.value.objectvalue = formatJsonFromString(value);
+            out_value->objectvalue = formatJsonFromString(str_value);
         break;
         case LIST:
-            item.value.listvalue = formatJsonListFromString(value);
+            out_value->listvalue = formatJsonListFromString(str_value);
         default:
         break;
     }
 
-    return item;
+    return 1;
 }
 
 json_t formatJsonFromString(const char* json_as_string){
