@@ -5,9 +5,7 @@
 
 // CREATION AND FORMATTING
 
-json_t formatJsonFromString(const char*); // pre declaration
-int createValueFromString(char* value, JSONValue*);
-
+const char* read_value(const char*, JSONValue*); // pre declaration
 
 json_t createJsonEmpty(){
     json_t json = (JSON*)malloc(sizeof(JSON));
@@ -31,10 +29,10 @@ const char* skip_whitespaces(const char* string){
     return string;
 }
 
-const char* read_string(const char* buffer, char** string){
+const char* read_string(const char* buffer, JSONValue* out_value){
+
     if( *buffer != '"'){
         printf("La string no comienza por '\"'\n");
-        *string = NULL;
         return NULL; // ha ocurrido un error, debería de haber una coma
     }
 
@@ -48,11 +46,11 @@ const char* read_string(const char* buffer, char** string){
 
     if( *buffer != '"'){
         printf("La string no terminar por '\"'\n");
-        *string = NULL;
         return NULL; // ha ocurrido un error, debería de haber una coma
     }
 
-    *string = strndup(cpy, (buffer-cpy));
+    out_value->data.stringvalue = strndup(cpy, buffer-cpy);
+    out_value->type = STRING;
 
     buffer++;
 
@@ -62,179 +60,74 @@ const char* read_string(const char* buffer, char** string){
 
 }
 
-const char* read_object(const char* buffer, char** string){
 
-    if( buffer == NULL || *buffer != '{'){
-        return NULL;
-    }
 
-    const char* cpy = buffer;
-
-    buffer++;
-
-    int nested = 0;
-
-    while( *buffer != 0 && (*buffer != '}' || nested != 0) ){
-
-        if( *buffer == '{' ){
-            nested++;
-        }
-
-        if( *buffer == '}'){
-            nested--;
-        }
-
-        buffer++;
-    }
-
-    if( *buffer != '}' || nested != 0){
-        return NULL; // ha ocurrido un error, el formato es incorrecto
-    }
-
-    buffer++;
-
-    *string = strndup(cpy, (buffer-cpy));
-
-    return buffer;
-
-}
-
-const char* read_list(const char* buffer, char** string){
+const char* read_list(const char* buffer, JSONValue* out_value){
 
     if( buffer == NULL || *buffer != '['){
         return NULL;
     }
 
-    const char* cpy = buffer;
-
     buffer++;
-
-    int nested = 0;
-
-    while( *buffer != 0 && (*buffer != ']' || nested != 0) ){
-        if( *buffer == '[' ){
-            nested++;
-        }
-
-        if( *buffer == ']'){
-            nested--;
-        }
-
-        buffer++;
-    }
-
-    if( *buffer != ']' || nested != 0){
-        return NULL; // ha ocurrido un error, el formato es incorrecto
-    }
-
-    buffer++;
-
-    *string = strndup(cpy, (buffer-cpy));
-
-    return buffer;
-
-}
-
-const char* read_number(const char* buffer, char** string){
-
-    if( buffer == NULL || *buffer < '0' || *buffer > '9'){
-        return NULL;
-    }
-
-    const char* cpy = buffer;
-
-    int dot_found = 0;
-
-    while( ( *buffer >= '0' && *buffer <= '9' ) || ( *buffer == '.' && dot_found == 0 )){
-        if( *buffer == '.' ){
-            dot_found = 1;
-        }
-        buffer++;
-    }
-
-    *string = strndup(cpy, (buffer-cpy));
-
-    return buffer;
-    
-
-}
-
-const char* read_value(const char* buffer, JSONValue* out_value){
-
-    if( buffer == NULL ){
-        return NULL;
-    }
 
     buffer = skip_whitespaces(buffer);
 
-    char* value;
+    json_list_t list = createJsonList();
 
-    switch (*buffer)
-    {
+    JSONValue j_value;
 
-    case '[':
+    int hasNext = 1;
 
-        buffer = read_list(buffer, &value);
+    while( *buffer != 0 && *buffer != ']' && hasNext != 0){
 
-        if( buffer == NULL ){
-            printf("Error leyendo lista\n");
-            return NULL;
-        }
+        hasNext = 0;
 
-        out_value->type = LIST;
-
-        break;
-
-    case '{':
-    
-        buffer = read_object(buffer, &value);
-
-        if( buffer == NULL ){
-            printf("Error leyendo objeto\n");
-            return NULL;
-        }
-
-        out_value->type = OBJECT;
-
-        break;
-
-    case '"':
-        
-        buffer = read_string(buffer, &value);
+        buffer = read_value(buffer, &j_value);
 
         if( buffer == NULL ){
             return NULL;
         }
 
-        out_value->type = STRING;
-
-        break;
-
-    default:
-        // aqui ya tema numeros
-        if( *buffer < '0' || *buffer > '9'){
-            printf("tipo no reconocido\n");
-            return NULL;
+        if(*buffer == ','){
+            hasNext = 1;
+            buffer++;
         }
 
-        buffer = read_number(buffer, &value);
+        append(list, j_value);
 
-        if(buffer == NULL){
-            return NULL;
-        }
+        buffer = skip_whitespaces(buffer);
 
+    }
+
+    if( *buffer != ']' || hasNext != 0 ){
+        return NULL;
+    }
+
+
+    out_value->data.listvalue = list;
+    out_value->type = LIST;
+
+    buffer++;
+
+    return buffer;
+
+}
+
+const char* read_number(const char* buffer, JSONValue* out_value){
+
+    char* end;
+
+    double val = strtod(buffer, &end);
+
+    if( val == 0 && end == buffer ){
+        return NULL;
+    }else{
+        out_value->data.numbervalue = val;
         out_value->type = NUMBER;
-
-        break;
     }
 
-    buffer = skip_whitespaces(buffer);
-
-    createValueFromString(value, out_value);
-
-    free(value);
-
-    return buffer;
+    return end;
+    
 
 }
 
@@ -246,7 +139,7 @@ const char* nextKeyValuePair(const char* string, JSONItem* item){
 
     string = skip_whitespaces(string);
 
-    char* name;
+    JSONValue name;
 
     string = read_string(string, &name);
 
@@ -255,7 +148,7 @@ const char* nextKeyValuePair(const char* string, JSONItem* item){
         return NULL;
     }
 
-    item->name = name;
+    item->name = name.data.stringvalue;
 
     string = skip_whitespaces(string);
 
@@ -269,7 +162,7 @@ const char* nextKeyValuePair(const char* string, JSONItem* item){
     string = read_value(string, &(item->value));
     
     if( string == NULL ){
-        printf("Error intentando leer el value con nombre %s\n", name);
+        printf("Error intentando leer el value con nombre %s\n", item->name);
         return NULL;
     }
 
@@ -277,135 +170,112 @@ const char* nextKeyValuePair(const char* string, JSONItem* item){
 
 }
 
-json_list_t formatJsonListFromString(const char* value){
-    
-    if( value == NULL || *value != '['){
+const char* read_object(const char* buffer, JSONValue* out_value){
+
+    if( buffer == NULL || *buffer != '{'){
         return NULL;
     }
 
-    value++;
+    buffer++;
 
-    value = skip_whitespaces(value);
+    buffer = skip_whitespaces(buffer);
 
-    json_list_t list = createJsonList();
+    json_t json = createJsonEmpty();
 
-    JSONValue j_value;
+    JSONItem j_item;
 
     int hasNext = 1;
 
-    while( *value != 0 && *value != ']' && hasNext != 0){
+    while( *buffer != 0 && *buffer != '}' && hasNext != 0){
 
         hasNext = 0;
 
-        value = read_value(value, &j_value);
+        buffer = nextKeyValuePair(buffer, &j_item);
 
-        if( value == NULL ){
+        if( buffer == NULL ){
             return NULL;
         }
 
-        if(*value == ','){
+        if(*buffer == ','){
             hasNext = 1;
-            value++;
+            buffer++;
         }
 
-        append(list, j_value);
+        addJSONItem(&(json->items), j_item);
 
-        if( hasNext != 0 ){
-            value = skip_whitespaces(value);
-        }
+        buffer = skip_whitespaces(buffer);
 
     }
 
-    if( *value != ']' || hasNext != 0 ){
+    if( *buffer != '}' || hasNext != 0 ){
         return NULL;
     }
 
-    return list;
-    
+
+    out_value->data.objectvalue = json;
+    out_value->type = OBJECT;
+
+    buffer++;
+
+    return buffer;
 
 }
 
-int createValueFromString(char* str_value, JSONValue* out_value){
+const char* read_value(const char* buffer, JSONValue* out_value){
+
+    if( buffer == NULL ){
+        return NULL;
+    }
+
+    buffer = skip_whitespaces(buffer);
+
+    switch (*buffer)
+    {
+
+    case '[':
+
+        buffer = read_list(buffer, out_value);
+
+        break;
+
+    case '{':
     
-    switch(out_value->type){
-        case STRING:
-            out_value->data.stringvalue = strdup(str_value);
-            break;
-        case NUMBER:
-            out_value->data.numbervalue = atof(str_value);
+        buffer = read_object(buffer, out_value);
+
         break;
-        case OBJECT:
-            out_value->data.objectvalue = formatJsonFromString(str_value);
+
+    case '"':
+        
+        buffer = read_string(buffer, out_value);
+
         break;
-        case LIST:
-            out_value->data.listvalue = formatJsonListFromString(str_value);
-        default:
+
+    default:
+
+        buffer = read_number(buffer, out_value);
+
         break;
     }
 
-    return 1;
+    if(buffer == NULL){
+        return NULL;
+    }
+
+    buffer = skip_whitespaces(buffer);
+
+    return buffer;
+
 }
 
-json_t formatJsonFromString(const char* json_as_string){
+JSONValue formatJsonFromString(const char* json_as_string){
+    JSONValue res;
+    const char* end = read_value(json_as_string, &res);
 
-    if(json_as_string == NULL){
-        return NULL;
+    if( end == NULL || *end != 0){
+        res.type = NONE;
     }
 
-    JSON* json_object = createJsonEmpty();
-    JSONItem item;
-    int hasNext = 1;
-
-    json_as_string = skip_whitespaces(json_as_string);
-
-    if(*json_as_string != '{'){
-        printf("El json no comienza correctamente\n");
-        return NULL;
-    }
-
-    json_as_string++;
-
-    json_as_string = skip_whitespaces(json_as_string);
-
-    while( *json_as_string != 0 && *json_as_string != '}' && hasNext != 0 ){
-
-        hasNext = 0;
-
-        json_as_string = nextKeyValuePair(json_as_string, &item);
-
-        if( json_as_string == NULL ){ // si ha habido cualquier problema liberamos
-
-            freeJson(json_object);
-
-            printf("Ha ocurrido un error intentando leer un item\n");
-
-            return NULL;
-
-        }
-
-        if(*json_as_string == ','){
-            hasNext = 1;
-            json_as_string++;
-        }
-
-        addJSONItem(&(json_object->items), item); 
-
-        if( hasNext != 0 ){
-            json_as_string = skip_whitespaces(json_as_string);
-        }
-
-    }
-
-    if( *json_as_string == 0 || hasNext == 1 ){ // algo ha salido mal, deberiamos acabar siempre en }
-
-        freeJson(json_object);
-
-        printf("El json no termina correctamente \n");
-
-        return NULL;
-    }
-
-    return json_object;
+    return res;
 }
 
 
@@ -413,17 +283,18 @@ json_t formatJsonFromString(const char* json_as_string){
 
 // loaders
 
-json_t createJsonFromString(const char* json_string){
+JSONValue createJsonFromString(const char* json_string){
     return formatJsonFromString(json_string);
 }
 
-json_t loadJsonFromFile(char* filename){
+JSONValue loadJsonFromFile(char* filename){
 
     FILE* json_file = fopen(filename, "r");
 
     if (json_file == NULL) {
         perror("File Not Found!\n");
-        return NULL;
+        JSONValue res = {.type = NONE};
+        return res;
     }
 
     fseek(json_file, 0L, SEEK_END);
@@ -433,11 +304,13 @@ json_t loadJsonFromFile(char* filename){
     char* json_file_buffer = (char*)malloc(total_length*sizeof(char)+sizeof(char)*3);
 
 
-    fread(json_file_buffer, sizeof(char), total_length, json_file);
+    size_t b = fread(json_file_buffer, sizeof(char), total_length, json_file);
+
+    json_file_buffer[b] = 0;
 
     fclose(json_file);
 
-    json_t res = formatJsonFromString(json_file_buffer);
+    JSONValue res = formatJsonFromString(json_file_buffer);
 
     free(json_file_buffer);
     
@@ -600,22 +473,18 @@ void freeJsonValue(JSONValue value){
     case STRING:
 
         if( value.data.stringvalue != NULL ){
-            printf("Freeing value: %s\n", value.data.stringvalue);
             free( value.data.stringvalue );
         }
 
         break;
 
     case OBJECT:
-        printf("Freeing nested json: \n");
         freeJson(value.data.objectvalue);
         break;
     case LIST:
-        printf("Freeing nested list: \n");
         freeJsonList(value.data.listvalue);
         break;
     default:
-        printf("Freeing value: it is a number or smth \n");
         break;
     }
 }
@@ -631,9 +500,7 @@ void freeJsonList(json_list_t list){
     }
 
     //despues de liberar todo tenemos que liberar data
-    printf("Justo justo antes de liberar datos lista %p\n", list->_data);
     free(list->_data);
-    printf("Justo justo despues de liberar datos lista\n");
 
     list->_data = NULL;
     list->_reserved = 0;
@@ -649,9 +516,7 @@ void freeJsonItem(JSONItem* item){
     }
 
     if( item -> name != NULL){
-        printf("Freeing name %s\n", item->name);
         free(item->name);
-        printf("Name fred\n");
     }
 
     freeJsonValue((item->value));

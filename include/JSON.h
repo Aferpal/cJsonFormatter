@@ -13,9 +13,9 @@ typedef JSONList* json_list_t;
 
 json_t createJsonEmpty();
 
-json_t createJsonFromString(const char*);
+JSONValue createJsonFromString(const char*);
 
-json_t loadJsonFromFile(char* filename);
+JSONValue loadJsonFromFile(char* filename);
 
 //setters
 
