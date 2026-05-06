@@ -47,12 +47,10 @@ JSONItemList* addJSONItem(JSONItemList** list, JSONItem item){
         (*runner)->right = NULL;
         (*runner)->item.name = item.name;
         (*runner)->item.value = item.value;
-        (*runner)->item.type = item.type;
 
     }else{  //if there was an item with same name we overwrite it
         (*runner)->item.name = item.name;
         (*runner)->item.value = item.value;
-        (*runner)->item.type = item.type;
     }
 
     return *runner;
@@ -61,37 +59,49 @@ JSONItemList* addJSONItem(JSONItemList** list, JSONItem item){
 }
 
 JSONItemList* addJSONStringItem(JSONItemList** list, char* name, char* value){
-    JSONItem item;
-    item.name = name;
-    item.value.stringvalue = value;
-    item.type = STRING;
+    JSONItem item = {
+        .name = strdup(name),
+        .value = {
+            .type = STRING,
+            .data.stringvalue = strdup(value)
+        }
+    };
 
     return addJSONItem(list, item);
 }
 
 JSONItemList* addJSONNumberItem(JSONItemList** list, char* name, double value){
-    JSONItem item;
-    item.name = name;
-    item.value.numbervalue = value;
-    item.type = NUMBER;
+    JSONItem item = {
+        .name = strdup(name),
+        .value = {
+            .type = NUMBER,
+            .data.numbervalue = value
+        }
+    };
 
     return addJSONItem(list, item);
 }
 
 JSONItemList* addJSONObjectItem(JSONItemList** list, char* name, struct JSON* value){
-    JSONItem item;
-    item.name = name;
-    item.value.objectvalue = value;
-    item.type = OBJECT;
+    JSONItem item = {
+        .name = strdup(name),
+        .value = {
+            .type = OBJECT,
+            .data.objectvalue = value
+        }
+    };
 
     return addJSONItem(list, item);
 }
 
 JSONItemList* addJSONListItem(JSONItemList** list, char* name, JSONList* value){
-    JSONItem item;
-    item.name = name;
-    item.value.listvalue = value;
-    item.type = LIST;
+    JSONItem item = {
+        .name = strdup(name),
+        .value = {
+            .type = LIST,
+            .data.listvalue = value
+        }
+    };
 
     return addJSONItem(list, item);
 }
@@ -100,7 +110,7 @@ JSONItemList* addJSONListItem(JSONItemList** list, char* name, JSONList* value){
 
 
 
-JSONItem* getJSONItemByName(JSONItemList** list, char* name){
+JSONValue* getJSONValueByName(JSONItemList** list, char* name){
     JSONItemList** item = getTheoricalNodeByName(list, name);
 
     if(item == NULL){
@@ -111,46 +121,46 @@ JSONItem* getJSONItemByName(JSONItemList** list, char* name){
         return NULL;
     }
 
-    return &((*item)->item);
+    return &((*item)->item.value);
 
 }
 
 double getJSONItemByNameAsNumber(JSONItemList** list, char* name){
-    JSONItem* item = getJSONItemByName(list, name);
+    JSONValue* item = getJSONValueByName(list, name);
 
     if(item == NULL || item->type != NUMBER){
         return -1;
     }
 
-    return (item)->value.numbervalue;
+    return item->data.numbervalue;
 }
 
 char* getJSONItemByNameAsString(JSONItemList** list, char* name){
-    JSONItem* item = getJSONItemByName(list, name);
+    JSONValue* item = getJSONValueByName(list, name);
 
     if(item == NULL || item->type != STRING){
         return 0;
     }
 
-    return (item)->value.stringvalue;
+    return item->data.stringvalue;
 }
 
 struct JSON* getJSONItemByNameAsObject(JSONItemList** list, char* name){
-    JSONItem* item = getJSONItemByName(list, name);
+    JSONValue* item = getJSONValueByName(list, name);
 
     if(item == NULL || item->type != OBJECT){
         return 0;
     }
 
-    return (item)->value.objectvalue;
+    return (item)->data.objectvalue;
 }
 
 JSONList* getJSONItemByNameAsList(JSONItemList** list, char* name){
-    JSONItem* item = getJSONItemByName(list, name);
+    JSONValue* item = getJSONValueByName(list, name);
 
     if(item == NULL || item->type != LIST){
         return 0;
     }
 
-    return (item)->value.listvalue;
+    return (item)->data.listvalue;
 }

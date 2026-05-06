@@ -25,7 +25,7 @@ libs:
 	$(CXX) $(CXXFLAGS) $(SOURCE_FOLDER)/*.c -shared -o $(LIB_FOLDER)/libjson.so -fPIC $(INCLUDE)
 
 tests:
-	export LD_LIBRARY_PATH=/home/abel_uma/projects/jsonFormatter/lib; \
+	export LD_LIBRARY_PATH=/home/aferpal/projects/cJsonFormatter/lib; \
 	for i in $(TESTS_FOLDER)/*.c; do\
 		echo "\n\n⚙️  running test $$i ⚙️\n\n"; \
 		$(CXX) $(CXXFLAGS) $$i -o $(OUTPUT_FOLDER)/test $(INCLUDE) $(LINK); \

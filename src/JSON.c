@@ -6,7 +6,7 @@
 // CREATION AND FORMATTING
 
 json_t formatJsonFromString(const char*); // pre declaration
-int createValueFromString(char* value, enum JSONType type, JSONValue*);
+int createValueFromString(char* value, JSONValue*);
 
 
 json_t createJsonEmpty(){
@@ -159,7 +159,7 @@ const char* read_number(const char* buffer, char** string){
 
 }
 
-const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* out_type){
+const char* read_value(const char* buffer, JSONValue* out_value){
 
     if( buffer == NULL ){
         return NULL;
@@ -181,7 +181,7 @@ const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* 
             return NULL;
         }
 
-        *out_type = LIST;
+        out_value->type = LIST;
 
         break;
 
@@ -194,7 +194,7 @@ const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* 
             return NULL;
         }
 
-        *out_type = OBJECT;
+        out_value->type = OBJECT;
 
         break;
 
@@ -206,7 +206,7 @@ const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* 
             return NULL;
         }
 
-        *out_type = STRING;
+        out_value->type = STRING;
 
         break;
 
@@ -223,14 +223,16 @@ const char* read_value(const char* buffer, JSONValue* out_value, enum JSONType* 
             return NULL;
         }
 
-        *out_type = NUMBER;
+        out_value->type = NUMBER;
 
         break;
     }
 
     buffer = skip_whitespaces(buffer);
 
-    createValueFromString(value, *out_type, out_value);
+    createValueFromString(value, out_value);
+
+    free(value);
 
     return buffer;
 
@@ -264,7 +266,7 @@ const char* nextKeyValuePair(const char* string, JSONItem* item){
 
     string++;
 
-    string = read_value(string, &(item->value), &(item->type));
+    string = read_value(string, &(item->value));
     
     if( string == NULL ){
         printf("Error intentando leer el value con nombre %s\n", name);
@@ -289,15 +291,13 @@ json_list_t formatJsonListFromString(const char* value){
 
     JSONValue j_value;
 
-    enum JSONType t;
-
     int hasNext = 1;
 
     while( *value != 0 && *value != ']' && hasNext != 0){
 
         hasNext = 0;
 
-        value = read_value(value, &j_value, &t);
+        value = read_value(value, &j_value);
 
         if( value == NULL ){
             return NULL;
@@ -325,20 +325,20 @@ json_list_t formatJsonListFromString(const char* value){
 
 }
 
-int createValueFromString(char* str_value, enum JSONType type, JSONValue* out_value){
+int createValueFromString(char* str_value, JSONValue* out_value){
     
-    switch(type){
+    switch(out_value->type){
         case STRING:
-            out_value->stringvalue = strdup(str_value);
+            out_value->data.stringvalue = strdup(str_value);
             break;
         case NUMBER:
-            out_value->numbervalue = atof(str_value);
+            out_value->data.numbervalue = atof(str_value);
         break;
         case OBJECT:
-            out_value->objectvalue = formatJsonFromString(str_value);
+            out_value->data.objectvalue = formatJsonFromString(str_value);
         break;
         case LIST:
-            out_value->listvalue = formatJsonListFromString(str_value);
+            out_value->data.listvalue = formatJsonListFromString(str_value);
         default:
         break;
     }
@@ -486,24 +486,45 @@ json_list_t getAsList(json_t json, char* name){
 
 void exportJsonWithDepth(json_t, int, FILE*);
 
-void exportJsonItem(JSONItem* item, int depth, FILE* file){
-    fprintf(file, "\"%s\": ", item->name);
-    switch (item->type)
+void exportJsonValue(JSONValue value, int depth, FILE* file){
+
+    switch (value.type)
     {
     case STRING:
-        fprintf(file, "\"%s\"", item->value.stringvalue);
+        fprintf(file, "\"%s\"", value.data.stringvalue);
         break;
     case NUMBER:
-        fprintf(file, "%g", item->value.numbervalue);
+        fprintf(file, "%g", value.data.numbervalue);
         break;
     case OBJECT:
-        exportJsonWithDepth(item->value.objectvalue, depth+1, file);
+        exportJsonWithDepth(value.data.objectvalue, depth+1, file);
         break;
     case LIST:
-        fprintf(file, "Aqui habría una lista cuya dir es %p\n", item->value.listvalue);
+        fprintf(file, "[\n");
+        for( int i = 0; i < length(value.data.listvalue); i++){
+
+            if(i != 0){
+                fprintf(file, ",\n");
+            }
+
+            for(int j = 0; j <= depth+1; j++){
+                fprintf(file, "\t");
+            }
+
+            exportJsonValue(get(value.data.listvalue, i), depth+1, file);
+        }
+        fprintf(file, "\n");
+        for(int j = 0; j <= depth; j++){
+                fprintf(file, "\t");
+        }
+        fprintf(file, "]");
     default:
         break;
     }
+}
+void exportJsonItem(JSONItem* item, int depth, FILE* file){
+    fprintf(file, "\"%s\": ", item->name);
+    exportJsonValue(item->value, depth, file);
 }
 
 void exportJsonItemList(JSONItemList* list, int depth, FILE* file){
@@ -571,6 +592,72 @@ char* jsonToString(json_t json){
 
 //Destructor
 
+void freeJsonList(json_list_t list);
+
+void freeJsonValue(JSONValue value){
+    switch (value.type)
+    {
+    case STRING:
+
+        if( value.data.stringvalue != NULL ){
+            printf("Freeing value: %s\n", value.data.stringvalue);
+            free( value.data.stringvalue );
+        }
+
+        break;
+
+    case OBJECT:
+        printf("Freeing nested json: \n");
+        freeJson(value.data.objectvalue);
+        break;
+    case LIST:
+        printf("Freeing nested list: \n");
+        freeJsonList(value.data.listvalue);
+        break;
+    default:
+        printf("Freeing value: it is a number or smth \n");
+        break;
+    }
+}
+
+void freeJsonList(json_list_t list){
+
+    if( list == NULL ){
+        return;
+    }
+
+    for( int i = 0; i < length(list); i++){
+        freeJsonValue( get(list, i) );
+    }
+
+    //despues de liberar todo tenemos que liberar data
+    printf("Justo justo antes de liberar datos lista %p\n", list->_data);
+    free(list->_data);
+    printf("Justo justo despues de liberar datos lista\n");
+
+    list->_data = NULL;
+    list->_reserved = 0;
+    list->_size = 0;
+
+    free(list);
+
+}
+
+void freeJsonItem(JSONItem* item){
+    if( item == NULL ){
+        return;
+    }
+
+    if( item -> name != NULL){
+        printf("Freeing name %s\n", item->name);
+        free(item->name);
+        printf("Name fred\n");
+    }
+
+    freeJsonValue((item->value));
+}
+
+
 void freeJsonItemList(JSONItemList* list){
 
     if(list == NULL){
@@ -591,18 +678,13 @@ void freeJsonItemList(JSONItemList* list){
         list->right = NULL;
     }
 
-    free(list->item.name);
-
-    if(list->item.type == STRING){
-        free(list->item.value.stringvalue);
-    }else if(list->item.type == OBJECT){
-        freeJson(list->item.value.objectvalue);
-    }
+    freeJsonItem(&(list->item));
 }
 
 void freeJson(json_t json){
     freeJsonItemList(json->items);
     free(json->items);
     json->items = NULL;
+    free(json);
 }
 

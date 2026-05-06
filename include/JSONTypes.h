@@ -6,12 +6,17 @@ typedef struct JSONList JSONList;
 
 enum JSONType{NUMBER, STRING, OBJECT, LIST, NONE};
 
-typedef union JSONValue{
+typedef union JSONValueData{
     double numbervalue;
     char* stringvalue;
     JSON* objectvalue;
     JSONList* listvalue;
-}JSONValue;
+}JSONValueData;
+
+typedef struct JSONValue{
+    enum JSONType type;
+    JSONValueData data;
+} JSONValue;
 
 
 typedef struct JSONList{

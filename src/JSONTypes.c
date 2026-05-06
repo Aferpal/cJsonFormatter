@@ -14,7 +14,7 @@ JSONList* createJsonListWithSize(int size){
     JSONList* list = createJsonList();
     list->_data = (JSONValue*)malloc(sizeof(JSONValue) * size);
     list->_reserved = size;
-    list->_size = size;
+    list->_size = 0;
 
     return list;
 }
@@ -30,25 +30,32 @@ JSONValue get(JSONList* list, int pos){
 
 }
 
-void resize(JSONList* list){
+int resize(JSONList* list){
     
-    int new_length = list->_reserved * 2;
+    int new_length = list->_reserved == 0 ? 2: list->_reserved* 2;
 
-    list->_data = (JSONValue*)realloc(list->_data, new_length);
+    JSONValue* tmp = (JSONValue*)realloc(list->_data, new_length * sizeof(JSONValue));
 
-    if( list->_data == NULL ){
+    if( tmp == NULL ){
         list->_size = 0;
         list->_reserved = 0;
+        return -1;
     }
 
+    list->_data = tmp;
+
     list->_reserved = new_length;
+
+    return 0;
 
 }
 
 void append(JSONList* list, JSONValue val){
 
     if( list->_reserved == list->_size ){
-        resize(list);
+        if(resize(list) == -1){
+            return;
+        };
     }
 
     list->_data[list->_size++] = val;

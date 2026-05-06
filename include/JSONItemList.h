@@ -6,7 +6,6 @@
 typedef struct JSONItem{
     char* name;
     JSONValue value;
-    enum JSONType type;
 }JSONItem;
 
 
@@ -29,8 +28,6 @@ JSONItemList* addJSONListItem(JSONItemList** list, char* name, JSONList* value);
 
 
 
-
-JSONItem* getJSONItemByName(JSONItemList** list, char* name);
 
 double getJSONItemByNameAsNumber(JSONItemList** list, char* name);
 
