@@ -1,42 +1,13 @@
 #ifndef __JSON_H__
 #define __JSON_H__
-#include "./JSONItemList.h"
 
+typedef struct JSONValue JSONValue;
 
-typedef struct JSON{
-    JSONItemList* items;
-}JSON;
+typedef JSONValue* json_t;
 
-typedef JSON* json_t;
+json_t createJsonFromString(const char*);
 
-typedef JSONList* json_list_t;
-
-json_t createJsonEmpty();
-
-JSONValue createJsonFromString(const char*);
-
-JSONValue loadJsonFromFile(char* filename);
-
-//setters
-
-void setAsNumber(json_t json, char* name, double value);
-
-void setAsString(json_t json, char* name, char* value);
-
-void setAsObject(json_t json, char* name, json_t value);
-
-void setAsList(json_t json, char* name, json_list_t value);
-
-//getters
-
-double getAsNumber(json_t json, char* name);
-
-char* getAsString(json_t json, char* name);
-
-json_t getAsObject(json_t json, char* name);
-
-json_list_t getAsList(json_t json, char* name);
-
+json_t loadJsonFromFile(char* filename);
 
 
 //other public functions

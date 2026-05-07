@@ -1,17 +1,11 @@
 #include<JSON.h>
-#include<stdio.h>
+#include<JSONTypes.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include<string.h>
 
-// CREATION AND FORMATTING
 
 const char* read_value(const char*, JSONValue*); // pre declaration
-
-json_t createJsonEmpty(){
-    json_t json = (JSON*)malloc(sizeof(JSON));
-    json->items = NULL;
-    return json;
-}
 
 int is_whitespace(const char c){
     return (c == ' ' || c == '\n' || c == '\t' || c == '\r');
@@ -180,7 +174,7 @@ const char* read_object(const char* buffer, JSONValue* out_value){
 
     buffer = skip_whitespaces(buffer);
 
-    json_t json = createJsonEmpty();
+    json_obj_t json = createJsonEmpty();
 
     JSONItem j_item;
 
@@ -267,12 +261,14 @@ const char* read_value(const char* buffer, JSONValue* out_value){
 
 }
 
-JSONValue formatJsonFromString(const char* json_as_string){
-    JSONValue res;
-    const char* end = read_value(json_as_string, &res);
+json_t formatJsonFromString(const char* json_as_string){
+
+    JSONValue* res = (JSONValue*)malloc(sizeof(JSONValue));
+
+    const char* end = read_value(json_as_string, res);
 
     if( end == NULL || *end != 0){
-        res.type = NONE;
+        res->type = NONE;
     }
 
     return res;
@@ -283,18 +279,17 @@ JSONValue formatJsonFromString(const char* json_as_string){
 
 // loaders
 
-JSONValue createJsonFromString(const char* json_string){
+json_t createJsonFromString(const char* json_string){
     return formatJsonFromString(json_string);
 }
 
-JSONValue loadJsonFromFile(char* filename){
+json_t loadJsonFromFile(char* filename){
 
     FILE* json_file = fopen(filename, "r");
 
     if (json_file == NULL) {
         perror("File Not Found!\n");
-        JSONValue res = {.type = NONE};
-        return res;
+        return NULL;
     }
 
     fseek(json_file, 0L, SEEK_END);
@@ -310,7 +305,7 @@ JSONValue loadJsonFromFile(char* filename){
 
     fclose(json_file);
 
-    JSONValue res = formatJsonFromString(json_file_buffer);
+    json_t res = formatJsonFromString(json_file_buffer);
 
     free(json_file_buffer);
     
@@ -318,86 +313,19 @@ JSONValue loadJsonFromFile(char* filename){
 }
 
 
-//setters
-
-void setAsNumber(json_t json, char* name, double value){
-    addJSONNumberItem(&(json->items), name, value);
-}
-
-void setAsString(json_t json, char* name, char* value){
-    addJSONStringItem(&(json->items), name, value);
-}
-
-void setAsObject(json_t json, char* name, json_t value){
-    addJSONObjectItem(&(json->items), name, value);
-}
-
-void setAsList(json_t json, char* name, json_list_t value){
-    addJSONListItem(&(json->items), name, value);
-}
-
-//getters
-
-double getAsNumber(json_t json, char* name){
-    return getJSONItemByNameAsNumber(&(json->items), name);
-}
-
-char* getAsString(json_t json, char* name){
-    return getJSONItemByNameAsString(&(json->items), name);
-}
-
-json_t getAsObject(json_t json, char* name){
-    return getJSONItemByNameAsObject(&(json->items), name);
-}
-
-json_list_t getAsList(json_t json, char* name){
-    return getJSONItemByNameAsList(&(json->items), name);
-}
 
 
-//other functions
+
+
+// exporters
 
 void exportJsonWithDepth(json_t, int, FILE*);
 
-void exportJsonValue(JSONValue value, int depth, FILE* file){
+void exportJsonWithDepth(json_t json, int depth, FILE* file);
 
-    switch (value.type)
-    {
-    case STRING:
-        fprintf(file, "\"%s\"", value.data.stringvalue);
-        break;
-    case NUMBER:
-        fprintf(file, "%g", value.data.numbervalue);
-        break;
-    case OBJECT:
-        exportJsonWithDepth(value.data.objectvalue, depth+1, file);
-        break;
-    case LIST:
-        fprintf(file, "[\n");
-        for( int i = 0; i < length(value.data.listvalue); i++){
-
-            if(i != 0){
-                fprintf(file, ",\n");
-            }
-
-            for(int j = 0; j <= depth+1; j++){
-                fprintf(file, "\t");
-            }
-
-            exportJsonValue(get(value.data.listvalue, i), depth+1, file);
-        }
-        fprintf(file, "\n");
-        for(int j = 0; j <= depth; j++){
-                fprintf(file, "\t");
-        }
-        fprintf(file, "]");
-    default:
-        break;
-    }
-}
 void exportJsonItem(JSONItem* item, int depth, FILE* file){
     fprintf(file, "\"%s\": ", item->name);
-    exportJsonValue(item->value, depth, file);
+    exportJsonWithDepth(&(item->value), depth, file);
 }
 
 void exportJsonItemList(JSONItemList* list, int depth, FILE* file){
@@ -409,10 +337,11 @@ void exportJsonItemList(JSONItemList* list, int depth, FILE* file){
 
     exportJsonItemList(list->right, depth, file);
 
-    for(int i = 0; i <= depth; i++){
+    for(int i = 0; i < depth; i++){
         fprintf(file, "\t");
     }
     exportJsonItem(&(list->item), depth, file);
+
     fprintf(file, ",\n");
 }
 
@@ -425,22 +354,61 @@ void exportJsonItemListFirst(JSONItemList* list, int depth, FILE* file){
 
     exportJsonItemList(list->right, depth, file);
 
-    for(int i = 0; i <= depth; i++){
+    for(int i = 0; i < depth; i++){
         fprintf(file, "\t");
     }
     exportJsonItem(&(list->item), depth, file);
     fprintf(file, "\n");
 }
 
-void exportJsonWithDepth(json_t json, int depth, FILE* file){
+void exportJsonObject(json_t json, int depth, FILE* file){
     fprintf(file, "{\n");
-
-    exportJsonItemListFirst(json->items, depth, file);
-
-    for( int i = 0; i< depth; i++){
+    exportJsonItemListFirst(json->data.objectvalue->items, depth+1, file);
+    for(int i = 0; i < depth; i++){
         fprintf(file, "\t");
     }
     fprintf(file, "}");
+}
+
+void exportJsonWithDepth(json_t json, int depth, FILE* file){
+    
+    switch (json->type)
+    {
+    case STRING:
+        fprintf(file, "\"%s\"", json->data.stringvalue);
+        break;
+    case NUMBER:
+        fprintf(file, "%g", json->data.numbervalue);
+        break;
+    case OBJECT:
+        exportJsonObject(json, depth, file);
+        break;
+    case LIST:
+        fprintf(file, "[\n");
+        for( int i = 0; i < length(json->data.listvalue); i++){
+
+            if(i != 0){
+                fprintf(file, ",\n");
+            }
+
+            for(int j = 0; j <= depth; j++){
+                fprintf(file, "\t");
+            }
+            JSONValue v = get(json->data.listvalue, i);
+            exportJsonWithDepth(&v, depth+1, file);
+        }
+
+        fprintf(file, "\n");
+        for(int j = 0; j <= depth; j++){
+                fprintf(file, "\t");
+        }
+
+        fprintf(file, "]");
+
+    default:
+        break;
+    }
+
 }
 
 void exportJson(json_t json, const char* filename){
@@ -454,12 +422,6 @@ void exportJson(json_t json, const char* filename){
 void printJson(json_t json){
     exportJsonWithDepth(json, 0, stdout);
     fprintf(stdout, "\n");
-}
-
-char* jsonToString(json_t json){
-    char* string = NULL;
-
-    return string;
 }
 
 
@@ -479,7 +441,7 @@ void freeJsonValue(JSONValue value){
         break;
 
     case OBJECT:
-        freeJson(value.data.objectvalue);
+        freeJson(NULL);
         break;
     case LIST:
         freeJsonList(value.data.listvalue);
@@ -547,9 +509,8 @@ void freeJsonItemList(JSONItemList* list){
 }
 
 void freeJson(json_t json){
-    freeJsonItemList(json->items);
-    free(json->items);
-    json->items = NULL;
+    freeJsonItemList(json->data.objectvalue->items);
+    free(json->data.objectvalue->items);
+    json->data.objectvalue->items = NULL;
     free(json);
 }
-
