@@ -35,7 +35,7 @@ JSONList* createJsonList();
 
 JSONList* createJsonListWithSize(int);
 
-JSONValue get(JSONList*, int);
+JSONValue* get(JSONList*, int);
 
 void append(JSONList*, JSONValue);
 

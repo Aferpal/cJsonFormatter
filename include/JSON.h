@@ -21,6 +21,6 @@ char* jsonToString(json_t);
 
 //destructor
 
-void freeJson(json_t);
+void freeJson(json_t*);
 
 #endif

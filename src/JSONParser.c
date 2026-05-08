@@ -394,8 +394,7 @@ void exportJsonWithDepth(json_t json, int depth, FILE* file){
             for(int j = 0; j <= depth; j++){
                 fprintf(file, "\t");
             }
-            JSONValue v = get(json->data.listvalue, i);
-            exportJsonWithDepth(&v, depth+1, file);
+            exportJsonWithDepth(get(json->data.listvalue, i), depth+1, file);
         }
 
         fprintf(file, "\n");
@@ -417,6 +416,8 @@ void exportJson(json_t json, const char* filename){
     if( file != NULL ){
         exportJsonWithDepth(json, 0, file);
     }
+
+    fclose(file);
 }
 
 void printJson(json_t json){
@@ -427,28 +428,58 @@ void printJson(json_t json){
 
 //Destructor
 
-void freeJsonList(json_list_t list);
+void freeJsonValue(JSONValue*);
 
-void freeJsonValue(JSONValue value){
-    switch (value.type)
-    {
-    case STRING:
-
-        if( value.data.stringvalue != NULL ){
-            free( value.data.stringvalue );
-        }
-
-        break;
-
-    case OBJECT:
-        freeJson(NULL);
-        break;
-    case LIST:
-        freeJsonList(value.data.listvalue);
-        break;
-    default:
-        break;
+void freeJsonItem(JSONItem* item){
+    if( item == NULL ){
+        return;
     }
+
+    if( item -> name != NULL){
+        free(item->name);
+        item->name = NULL;
+    }
+
+    freeJsonValue(&(item->value));
+    
+}
+
+
+void freeJsonItemList(JSONItemList* list){
+
+    if(list == NULL){
+        return;
+    }
+
+    if(list->left != NULL){    
+        freeJsonItemList(list->left);
+        free(list->left);
+        list->left = NULL;
+    }
+
+    if(list->right != NULL){
+        freeJsonItemList(list->right);
+        free(list->right);
+        list->right = NULL;
+    }
+
+    freeJsonItem(&(list->item));
+}
+
+void freeJsonObject(json_obj_t json_obj){
+
+    if( json_obj == NULL ){
+        return;
+    }
+
+    freeJsonItemList(json_obj->items);
+
+    free(json_obj->items);
+
+    json_obj->items = NULL;
+
+    free(json_obj);
+
 }
 
 void freeJsonList(json_list_t list){
@@ -472,45 +503,39 @@ void freeJsonList(json_list_t list){
 
 }
 
-void freeJsonItem(JSONItem* item){
-    if( item == NULL ){
-        return;
-    }
+void freeJsonValue(JSONValue* value){
+    switch (value->type)
+    {
+    case STRING:
 
-    if( item -> name != NULL){
-        free(item->name);
-    }
+        if( value->data.stringvalue != NULL ){
+            free( value->data.stringvalue );
+        }
 
-    freeJsonValue((item->value));
+        value->data.stringvalue = NULL;
+
+        break;
+
+    case OBJECT:
+
+        freeJsonObject(value->data.objectvalue);
+        value->data.objectvalue = NULL;
+
+        break;
+
+    case LIST:
+
+        freeJsonList(value->data.listvalue);
+        value->data.listvalue = NULL;
+        break;
+
+    default:
+        break;
+    }
 }
 
-
-void freeJsonItemList(JSONItemList* list){
-
-    if(list == NULL){
-        return;
-    }
-
-    freeJsonItemList(list->left);
-
-    if(list->left != NULL){
-        free(list->left);
-        list->left = NULL;
-    }
-
-    freeJsonItemList(list->right);
-
-    if(list->right != NULL){
-        free(list->right);
-        list->right = NULL;
-    }
-
-    freeJsonItem(&(list->item));
-}
-
-void freeJson(json_t json){
-    freeJsonItemList(json->data.objectvalue->items);
-    free(json->data.objectvalue->items);
-    json->data.objectvalue->items = NULL;
-    free(json);
+void freeJson(json_t* json){
+    freeJsonValue(*json);
+    free(*json);
+    *json = NULL;
 }

@@ -19,14 +19,13 @@ JSONList* createJsonListWithSize(int size){
     return list;
 }
 
-JSONValue get(JSONList* list, int pos){
+JSONValue* get(JSONList* list, int pos){
 
-    JSONValue value = {__INT32_MAX__};
     if( length(list) <= pos ){
-        return value;
+        return NULL;
     }
 
-    return list->_data[pos];
+    return &(list->_data[pos]);
 
 }
 
